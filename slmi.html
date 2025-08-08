@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SLM-i Innovation - Démo GPS interactive</title>
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    crossorigin=""
+  />
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: url('background.jpg') no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      font-size: 18px; /* Taille de texte globale augmentée */
+    }
+
+    header {
+      background-color: rgba(0, 74, 173, 0.9);
+      padding: 15px 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    header img {
+      height: 50px;
+    }
+
+    header h1 {
+      font-size: 2.4rem; /* Titre principal agrandi */
+      margin: 0;
+    }
+
+    main {
+      max-width: 1000px;
+      margin: 30px auto;
+      padding: 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+      border-radius: 10px;
+    }
+
+    h2 {
+      color: #ffd700;
+      margin-top: 0;
+      font-size: 1.8rem; /* Sous-titre agrandi */
+    }
+
+    #map {
+      height: 500px;
+      width: 100%;
+      margin-top: 30px;
+      border-radius: 10px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.4);
+    }
+
+    footer {
+      text-align: center;
+      margin: 30px 0;
+      font-size: 1rem;
+      color: #ccc;
+    }
+
+    #demoButton {
+      background-color: #ffd700;
+      border: none;
+      color: #004aad;
+      font-weight: bold;
+      padding: 12px 25px;
+      border-radius: 25px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+      display: inline-block;
+    }
+    #demoButton:hover {
+      background-color: #ffbf00;
+    }
+
+    #demoText {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: rgba(255,255,255,0.1);
+      border-left: 5px solid #ffd700;
+      border-radius: 5px;
+      display: none;
+      font-size: 1.2rem; /* Texte de la démo agrandi */
+      line-height: 1.6;
+    }
+
+    .highlight {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-left: 5px solid #ffd700;
+      margin: 20px 0;
+      border-radius: 5px;
+      font-size: 1.15rem; /* Encarts agrandis */
+      line-height: 1.6;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="logo.png" alt="Logo SLM-i" />
+    <h1>SLM-i Innovation</h1>
+  </header>
+
+  <main>
+    <h2>🚗 Suivi GPS de Véhicule en Temps Réel</h2>
+    <button id="demoButton">Lancer la démo GPS</button>
+
+    <div id="map"></div>
+
+    <div id="demoText">
+      <strong>🔎 Démonstration GPS :</strong><br />
+      Cette plateforme vous permet de suivre vos véhicules en temps réel. Grâce à notre technologie GPS, vous pouvez visualiser la position exacte, l’historique des déplacements, et optimiser les trajets pour réduire les coûts et sécuriser vos actifs.  
+      Le véhicule sur la carte se déplace de façon fluide, simulant un trajet réel, afin que vous puissiez vous projeter facilement.
+    </div>
+
+    <div class="highlight">
+      <strong>📢 Publicité :</strong><br>
+      Avec <strong>SLM-i Innovation</strong>, suivez vos véhicules, vos marchandises ou vos équipes en temps réel grâce à notre technologie GPS intégrée et performante.
+    </div>
+
+    <div class="highlight">
+      <strong>📡 Rôle du GPS :</strong><br>
+      Le GPS permet de localiser un véhicule ou un actif à chaque instant, d'optimiser les trajets, de sécuriser les transports et de suivre l’activité sur une carte en direct.
+    </div>
+  </main>
+
+  <footer>
+    &copy; 2025 SLM-i Innovation. Tous droits réservés.
+  </footer>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    const map = L.map('map').setView([-18.8792, 47.5079], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19,
+    }).addTo(map);
+
+    const carIcon = L.icon({
+      iconUrl: 'car-icon.png', // Assure-toi que ce fichier existe
+      iconSize: [50, 50],
+      iconAnchor: [25, 25],
+      popupAnchor: [0, -25]
+    });
+
+    const route = [
+      [-18.8792, 47.5079],
+      [-18.8780, 47.5085],
+      [-18.8770, 47.5095],
+      [-18.8760, 47.5105],
+      [-18.8750, 47.5110],
+      [-18.8740, 47.5120],
+      [-18.8730, 47.5130],
+      [-18.8720, 47.5140],
+    ];
+
+    let index = 0;
+    let intervalId = null;
+    let carMarker = null;
+
+    const demoButton = document.getElementById('demoButton');
+    const demoText = document.getElementById('demoText');
+    demoText.style.display = 'none';
+
+    function moveCar() {
+      index++;
+      if (index >= route.length) index = 0;
+      const currentPos = route[index];
+      carMarker.setLatLng(currentPos);
+      carMarker.setPopupContent(`🚗 Véhicule en déplacement<br><small>Lat: ${currentPos[0].toFixed(5)}<br>Lng: ${currentPos[1].toFixed(5)}</small>`);
+    }
+
+    demoButton.addEventListener('click', () => {
+      if (!carMarker) {
+        carMarker = L.marker(route[0], { icon: carIcon }).addTo(map);
+        carMarker.bindPopup('🚗 Véhicule en déplacement').openPopup();
+        demoText.style.display = 'block';
+
+        intervalId = setInterval(moveCar, 1000);
+        demoButton.textContent = 'Arrêter la démo GPS';
+      } else {
+        clearInterval(intervalId);
+        intervalId = null;
+        map.removeLayer(carMarker);
+        carMarker = null;
+        demoText.style.display = 'none';
+        demoButton.textContent = 'Lancer la démo GPS';
+        index = 0;
+      }
+    });
+  </script>
+</body>
+</html>
